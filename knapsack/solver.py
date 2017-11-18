@@ -39,14 +39,12 @@ def solve_it(input_data):
         # dynamic progr
         #value, taken, tab = dynamic_prog(capacity, items)
         value, taken, tab = dynamic_prog(capacity, items)
-
         # DF-search
         #value, taken, visited = DFSearch(capacity, items)
     elif len(items) <= 400:
-        # greedy alg
         value, taken, tab = dynamic_prog_2(capacity, items, eps=0.01)
     elif len(items) <= 1000:
-        value, taken = greedy(capacity, items, 'size')
+        value, taken, tab = dynamic_prog(capacity, items)
     else:
         value, taken = greedy(capacity, items, 'value')
     
@@ -142,7 +140,7 @@ def dynamic_prog_2(K, items2, eps=0.2):
     for i in items2:
         items.append(Item(i.index, math.ceil(i.value/((eps/N)*Lbound)), i.weight))
     P = sum([i.value for i in items])
-    print(N, P, K)
+    #print(N, P, K)
     tab = [[max(P, K+1) for p in range(P+1)] for i in range(N+1)]
     tab[0][0] = 0
     for i in range(1, N+1):
