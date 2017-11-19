@@ -182,13 +182,13 @@ def search(K, items, node_list):
     while len(node_list) > 0:
         n = node_list.pop()
         if n.feasible:
-            if n.is_leaf:
-                if curr_best == None or n.value > curr_best.value:
+            if not n.is_leaf: 
+                if curr_best == None or n.estimate > curr_best.value:  
+                    visit(n, node_list, K, items)  
+                    visited += 1 
+            else: 
+                if curr_best == None or n.value > curr_best.value: 
                     curr_best = n
-            else:
-                if curr_best == None or n.estimate > curr_best.value:
-                    visit(n, node_list, K, items)
-                    visited += 1
     return curr_best, visited
 
 def visit(node, node_list, K, items):
