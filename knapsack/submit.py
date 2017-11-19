@@ -74,7 +74,8 @@ def load_metadata(metadata_file_name='_coursera'):
                 print('Empty url in _coursera file: %s' % metadata_file_name)
                 quit()
             if len(name) <= 0:
-                print('Empty assignment name in _coursera file: %s' % metadata_file_name)
+                print('Empty assignment name in _coursera file: %s' %
+                      metadata_file_name)
                 quit()
     except Exception as e:
         print('problem parsing assignment metadata file')
@@ -104,7 +105,8 @@ def part_prompt(problems):
         count += 1
     print('0) All')
 
-    part_text = input('Please enter which part(s) you want to submit (0-%d): ' % (count-1))
+    part_text = input(
+        'Please enter which part(s) you want to submit (0-%d): ' % (count - 1))
     selected_problems = []
     selected_models = []
 
@@ -116,7 +118,8 @@ def part_prompt(problems):
             continue
 
         if i >= count or i < 0:
-            print('Skipping input "' + item + '".  It is out of the valid range (0-%d).' % (count-1))
+            print('Skipping input "' + item +
+                  '".  It is out of the valid range (0-%d).' % (count - 1))
             continue
 
         if i == 0:
@@ -124,7 +127,7 @@ def part_prompt(problems):
             continue
 
         if i <= len(problems):
-            selected_problems.append(problems[i-1])
+            selected_problems.append(problems[i - 1])
 
     if len(selected_problems) <= 0:
         print('No valid assignment parts identified.  Please try again. \n')
@@ -148,36 +151,37 @@ def compute(metadata, solver_file_override=None):
     '''
 
     if solver_file_override is not None:
-        print('Overriding solver file with: '+solver_file_override)
+        print('Overriding solver file with: ' + solver_file_override)
 
     selected_problems = part_prompt(metadata.part_data)
 
     results = {}
 
-    #submission needs empty dict for every assignment part
-    results.update({prob_data.id : {} for prob_data in metadata.part_data})
+    # submission needs empty dict for every assignment part
+    results.update({prob_data.id: {} for prob_data in metadata.part_data})
 
     for problem in selected_problems:
         if solver_file_override != None:
             solver_file = solver_file_override
         else:
             solver_file = problem.solver_file
-        
+
         if not os.path.isfile(solver_file):
-            print('Unable to locate assignment file "%s" in the current working directory.' % solver_file)
+            print(
+                'Unable to locate assignment file "%s" in the current working directory.' % solver_file)
             continue
 
         # if a relative path is given, add that patth to system path so import will work
         if os.path.sep in solver_file:
             split = solver_file.rfind(os.path.sep)
             path = solver_file[0:split]
-            file_name = solver_file[split+1:]
+            file_name = solver_file[split + 1:]
             sys.path.insert(0, path)
             solver_file = file_name
 
         submission = output(problem.input_file, solver_file)
         if submission != None:
-            results[problem.id] = {'output':submission}
+            results[problem.id] = {'output': submission}
 
     print('\n== Computations Complete ...')
 
@@ -203,14 +207,13 @@ def output(input_file, solver_file):
     '''
 
     try:
-        pkg = __import__(solver_file[:-3]) # remove '.py' extension
+        pkg = __import__(solver_file[:-3])  # remove '.py' extension
         if not hasattr(pkg, 'solve_it'):
             print('the solve_it() function was not found in %s' % solver_file)
             quit()
     except ImportError:
         print('import error with python file "%s".' % solver_file)
         quit()
-
 
     solution = ''
 
@@ -219,7 +222,8 @@ def output(input_file, solver_file):
         solution = pkg.solve_it(load_input_data(input_file))
     except Exception as e:
         print('the solve_it(input_data) method from solver.py raised an exception')
-        print('try testing it with python ./solver.py before running this submission script')
+        print(
+            'try testing it with python ./solver.py before running this submission script')
         print('exception message:')
         print(str(e))
         print('')
@@ -236,7 +240,7 @@ def output(input_file, solver_file):
     return solution.strip() + '\n' + str(end - start)
 
 
-def login_dialog(assignment_key, results, credentials_file_location = '_credentials'):
+def login_dialog(assignment_key, results, credentials_file_location='_credentials'):
     '''
     Requests Coursera login credentials from the student and submits the 
     student's solutions for grading
@@ -253,7 +257,7 @@ def login_dialog(assignment_key, results, credentials_file_location = '_credenti
 
     while not success:
 
-        # stops infinate loop when credentials file is incorrect 
+        # stops infinate loop when credentials file is incorrect
         if tries <= 0:
             login, token = login_prompt(credentials_file_location)
         else:
@@ -262,14 +266,15 @@ def login_dialog(assignment_key, results, credentials_file_location = '_credenti
         code, responce = submit_solution(assignment_key, login, token, results)
 
         print('\n== Coursera Responce ...')
-        #print(code)
+        # print(code)
         print(responce)
-        
+
         if code != 401:
             success = True
         else:
             print('\ntry logging in again')
         tries += 1
+
 
 def login_prompt(credentials_file_location):
     '''
@@ -277,7 +282,7 @@ def login_prompt(credentials_file_location):
     Returns:
         the user's login and token
     '''
-    
+
     if os.path.isfile(credentials_file_location):
         try:
             with open(credentials_file_location, 'r') as metadata_file:
@@ -318,14 +323,14 @@ def submit_solution(assignment_key, email_address, token, results):
     '''
 
     print('\n== Connecting to Coursera ...')
-    print('Submitting %d of %d parts' % 
-        (sum(['output' in v for k,v in results.items()]), len(results)))
+    print('Submitting %d of %d parts' %
+          (sum(['output' in v for k, v in results.items()]), len(results)))
 
     # build json datastructure
     parts = {}
     submission = {
-        'assignmentKey': assignment_key,  
-        'submitterEmail': email_address,  
+        'assignmentKey': assignment_key,
+        'submitterEmail': email_address,
         'secret': token,
         'parts': results
     }
@@ -341,11 +346,11 @@ def submit_solution(assignment_key, email_address, token, results):
         responce = json.loads(e.read().decode('utf8'))
 
         if 'details' in responce and responce['details'] != None and \
-            'learnerMessage' in responce['details']:
+                'learnerMessage' in responce['details']:
             return e.code, responce['details']['learnerMessage']
         else:
             return e.code, 'Unexpected response code, please contact the ' \
-                               'course staff.\nDetails: ' + responce['message']
+                'course staff.\nDetails: ' + responce['message']
 
     code = res.code
     responce = json.loads(res.read().decode('utf8'))
@@ -378,15 +383,15 @@ def main(args):
     if args.metadata is None:
         metadata = load_metadata()
     else:
-        print('Overriding metadata file with: '+args.metadata)
+        print('Overriding metadata file with: ' + args.metadata)
         metadata = load_metadata(args.metadata)
 
-    print('==\n== '+metadata.name+' Solution Submission \n==')
-    
+    print('==\n== ' + metadata.name + ' Solution Submission \n==')
+
     # compute dialog
     results = compute(metadata, args.override)
 
-    if sum(['output' in v for k,v in results.items()]) <= 0:
+    if sum(['output' in v for k, v in results.items()]) <= 0:
         return
 
     # store submissions if requested
@@ -394,13 +399,13 @@ def main(args):
         print('Recording submission as files')
         for sid, submission in results.items():
             if 'output' in submission:
-                directory = '_'+sid
+                directory = '_' + sid
                 if not os.path.exists(directory):
                     os.makedirs(directory)
 
-                submission_file_name = directory+'/submission.sub'
-                print('  writting submission file: '+submission_file_name)
-                with open(submission_file_name,'w') as submission_file:
+                submission_file_name = directory + '/submission.sub'
+                print('  writting submission file: ' + submission_file_name)
+                with open(submission_file_name, 'w') as submission_file:
                     submission_file.write(submission['output'])
                     submission_file.close()
         return
@@ -409,12 +414,13 @@ def main(args):
     if args.credentials is None:
         login_dialog(metadata.assignment_key, results)
     else:
-        print('Overriding credentials file with: '+args.credentials)
+        print('Overriding credentials file with: ' + args.credentials)
         login_dialog(metadata.assignment_key, results, args.credentials)
 
 
-
 import argparse
+
+
 def build_parser():
     '''
     Builds an argument parser for the CLI
@@ -432,20 +438,20 @@ def build_parser():
         https://github.com/discreteoptimization/assignment'''
     )
 
-    parser.add_argument('-v', '--version', action='version', 
-        version='%(prog)s '+version)
+    parser.add_argument('-v', '--version', action='version',
+                        version='%(prog)s ' + version)
 
-    parser.add_argument('-o', '--override', 
-        help='overrides the python source file specified in the \'_coursera\' file')
+    parser.add_argument('-o', '--override',
+                        help='overrides the python source file specified in the \'_coursera\' file')
 
-    parser.add_argument('-m', '--metadata', 
-        help='overrides the \'_coursera\' metadata file')
+    parser.add_argument('-m', '--metadata',
+                        help='overrides the \'_coursera\' metadata file')
 
-    parser.add_argument('-c', '--credentials', 
-        help='overrides the \'_credentials\' credentials file')
+    parser.add_argument('-c', '--credentials',
+                        help='overrides the \'_credentials\' credentials file')
 
-    parser.add_argument('-rs', '--record_submission', 
-        help='records the submission(s) as files', action='store_true')
+    parser.add_argument('-rs', '--record_submission',
+                        help='records the submission(s) as files', action='store_true')
 
     return parser
 
@@ -453,4 +459,3 @@ def build_parser():
 if __name__ == '__main__':
     parser = build_parser()
     main(parser.parse_args())
-

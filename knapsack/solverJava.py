@@ -4,6 +4,7 @@
 import os
 from subprocess import Popen, PIPE
 
+
 def solve_it(input_data):
 
     # Writes the inputData to a temporay file
@@ -34,4 +35,3 @@ if __name__ == '__main__':
         print solve_it(input_data)
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/ks_4_0)')
-
