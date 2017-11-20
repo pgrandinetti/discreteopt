@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import math
+import random
+random.seed(1847859218408232171737)
 from collections import namedtuple
 Item = namedtuple("Item", ['index', 'value', 'weight'])
 
@@ -38,7 +40,6 @@ def solve_it(input_data):
     """
     if len(items) <= 200:
         # dynamic progr
-        #value, taken, tab = dynamic_prog(capacity, items)
         value, taken, tab = dynamic_prog(capacity, items)
         # DF-search
         #value, taken, visited = DFSearch(capacity, items)
@@ -228,14 +229,16 @@ def best_first(node_list, left, right):
         node_list.sort(key=lambda x: x.value)
 
 
-from random import randint
-
-
 def rand_first(node_list, left, right):
-    if left.feasible:
-        node_list.insert(randint(0, len(node_list)), left)
-    if right.feasible:
-        node_list.insert(randint(0, len(node_list)), right)
+    r = random.random()
+    if r > 0.5:
+        l = [left, right]
+    else:
+        l = [right, left]
+    if l[0].feasible:
+        node_list.append(l[0])
+    if l[1].feasible:
+        node_list.append(l[1])
 
 
 class Node():
