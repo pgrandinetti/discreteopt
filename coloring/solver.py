@@ -50,19 +50,17 @@ def search():
     curr = CPNode(first_sol)
     to_expand = [curr]
     while len(to_expand) > 0:
-        node = to_expand[-1]
+        node = to_expand.pop()
         if node.is_leaf:
             if best is None or\
                 node.value < best.value:
                 best = node
-            to_expand.pop()
-        elif node.can_expand():
-            novel = node.expand()
-            if best is None or\
-                novel.value < best.value:
-                to_expand.append(novel)
         else:
-            to_expand.pop()
+            novels = node.expand()
+            for new in novels[::-1]:
+                if best is None or\
+                    new.value < best.value:
+                    to_expand.append(new)
     assert(assert_sol(best))
     return best
 
@@ -109,8 +107,13 @@ class CPNode():
         all_sol = self.list_to_assign()
         novel = all_sol[self.next_child]
         self.next_child += len(self.sol)+1
-        new_sol = assign_value(self.sol, novel)
-        return CPNode(new_sol)
+        available = assign_value(self.sol, novel)
+        to_ret = []
+        for c in sorted(available):
+            new_sol = self.sol.copy()
+            new_sol[novel] = c
+            to_ret.append(CPNode(new_sol))
+        return to_ret
 
     def list_to_assign(self):
         global DEG
@@ -131,11 +134,12 @@ def assign_value(curr_sol, idx):
             all_values.add(curr_sol[c])
         elif c == idx:
             all_values.add(curr_sol[r])
-    for i in range(len(curr_sol)):
+    available = set()
+    for i in range(max(curr_sol) + 1):
         if not i in all_values:
-            new_sol[idx] = i
-            return new_sol
-    raise Exception('Smtg is dead wrong')
+            available.add(i)
+    if not available: available.add(max(all_values) + 1)
+    return [min(available)]
 
 def assert_sol(best):
     global EDGES
