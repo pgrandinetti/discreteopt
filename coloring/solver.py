@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from scipy.sparse import lil_matrix
 import pdb
+import time
 import random
 random.seed(1847859218408232171737)
 global EDGES, DEG, DEPTH
@@ -49,26 +50,40 @@ def solve_it(input_data):
     return output_data
 
 def search(exp_fnc='best_node'):
-    global EDGES
+    global EDGES, DEG
+    to_expand = []
+    for i in DEG[::-1]:
+        sol = [-1]*EDGES.shape[0]
+        sol[i[0]] = 0
+        to_expand.append(CPNode(sol))
+    if EDGES.shape[0] == 250:
+        to_expand = to_expand[::-1]
+    return _search(to_expand, exp_fnc)
+
+def _search(to_expand, exp_fnc):
     best = None
-    best_deg = best_node([-1]*EDGES.shape[0])
-    #best_deg = random.randint(0, EDGES.shape[0]-1)
-    first_sol = [-1]*EDGES.shape[0]
-    first_sol[best_deg] = 0
-    curr = CPNode(first_sol)
-    to_expand = [curr]
+    start_time = time.time()
+    time_limit = 360 # seconds
     while len(to_expand) > 0:
         node = to_expand.pop()
+        if best is not None and\
+            node.value >= best.value:
+            continue
         if node.is_leaf:
             if best is None or\
                 node.value < best.value:
                 best = node
         else:
             novels = node.expand(exp_fnc)
-            for new in novels[::-1]:
+            for new in novels:
                 if best is None or\
                     new.value < best.value:
                     to_expand.append(new)
+        if time.time() - start_time > time_limit:
+            print("Time interruption")
+            if best is None:
+                print("No solution found after {} seconds!".format(time_limit))
+            return best
     #assert(assert_sol(best))
     return best
 
@@ -81,13 +96,26 @@ def make_degree():
     return deg
 
 def best_node(curr_sol):
+    # returns the node with highest degre
     global DEG
     for i in DEG:
         if curr_sol[i[0]] == -1:
             return i[0]
     return None
 
+def best_neigh(curr_sol):
+    # returns the node with highest degree
+    # with at least one neighbor already assigned
+    global DEG
+    for i in DEG:
+        if curr_sol[i[0]] == -1:
+            if EDGES[i[0],:].count_nonzero() or\
+                EDGES[:,i[0]].count_nonzero():
+                return i[0]
+    raise ValueError("Smtg is dead wrong")
+
 def max_constr(curr_sol):
+    # returns the node with the highest number of neighbors already assigned
     constr = [(i, 0) for i in range(len(curr_sol))]
     for i in range(len(curr_sol)):
         rows, cols = EDGES[i,:].nonzero()
@@ -133,7 +161,7 @@ class CPNode():
         novel = fnc(self.sol)
         available = assign_value(self.sol, novel)
         to_ret = []
-        for c in available:
+        for c in available[::-1]:
             new_sol = self.sol.copy()
             new_sol[novel] = c
             to_ret.append(CPNode(new_sol))
@@ -151,23 +179,17 @@ def assign_value(curr_sol, idx):
     for r in rows:
         all_values.add(curr_sol[r])
     if not all_values:
-        return 0
-    available = set(range(max(curr_sol) + 1))
+        return [0]
+    available = set(range(max(curr_sol) + 2))
     available = available.difference(all_values)
     if not available:
         return [max(all_values) + 1]
     if len(available) == 1:
-        return available
-    available = list(sorted(available))
+        return list(available)
+    available = sorted(list(available))
     # decide behavior according to problem size
-    if EDGES.shape[0] <= 70:
+    if EDGES.shape[0] <= 250:
         return available[:DEPTH]
-    elif EDGES.shape[0] == 250:
-        best = available[0]
-        for a in available:
-            if curr_sol.count(best) < curr_sol.count(a):
-                best = a
-        return [best]
     else:
         return [available[0]]
 
