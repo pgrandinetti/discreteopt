@@ -29,7 +29,6 @@ def solve_it(input_data):
         EDGES[e[0],e[1]] = True
     del edges
     DEG = make_degree()
-    sol = [-1] * EDGES.shape[0]
 
     # set max depth of search expansion
     DEPTH = EDGES.shape[0]
@@ -57,6 +56,8 @@ def search(exp_fnc='best_node'):
         sol[i[0]] = 0
         to_expand.append(CPNode(sol))
     if EDGES.shape[0] == 250:
+        # for some reason this instance works
+        # better with the least degree node first
         to_expand = to_expand[::-1]
     return _search(to_expand, exp_fnc)
 
