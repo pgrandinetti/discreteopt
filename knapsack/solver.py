@@ -1,13 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import math
+import pdb
 import random
+import time
 random.seed(1847859218408232171737)
 from collections import namedtuple
 Item = namedtuple("Item", ['index', 'value', 'weight'])
 
+global SORTED_RATIO
 
 def solve_it(input_data):
+    global SORTED_RATIO
     # Modify this code to run your optimization algorithm
 
     # parse the input
@@ -38,6 +42,7 @@ def solve_it(input_data):
             value += item.value
             weight += item.weight
     """
+    SORTED_RATIO = make_sorted_ratio(items)
     if len(items) <= 200:
         # dynamic progr
         value, taken, tab = dynamic_prog(capacity, items)
@@ -48,13 +53,20 @@ def solve_it(input_data):
     elif len(items) <= 1000:
         value, taken, tab = dynamic_prog(capacity, items)
     else:
-        value, taken = greedy(capacity, items, 'value')
+        value, taken, visited = DFSearch(capacity, items)
 
     # prepare the solution in the specified output format
     output_data = str(value) + ' ' + str(0) + '\n'
     output_data += ' '.join(map(str, taken))
     return output_data
 
+def make_sorted_ratio(items):
+    ratio = [(0, 0)] * len(items)
+    for idx in range(len(items)):
+        ratio[idx] = (items[idx].value /
+                     items[idx].weight, idx)
+    ratio.sort(key=lambda x: x[0])
+    return ratio
 
 def greedy(K, items, ordering='ratio'):
     elems = _order_elem(items, k=ordering)
@@ -181,24 +193,33 @@ def dynamic_prog_2(K, items2, eps=0.2):
 
 def DFSearch(K, items):
     n1 = Node(K, items, [])
-    solution, visited = search(K, items, [n1])
-    assert_sol(K, items, solution.value, solution.sol)
-    return solution.value, solution.sol, visited
+    items2 = sorted(items, key=lambda x: x.value/x.weight, reverse=True)
+    best_node, visited = search(K, items2, [n1])
+    sol = [0] * len(best_node.sol)
+    for i in range(len(best_node.sol)):
+        sol[items2[i].index] = best_node.sol[i]
+    assert_sol(K, items, best_node.value, sol)
+    return best_node.value, sol, visited
 
 
 def search(K, items, node_list):
     curr_best = None
     visited = 0
+    time_limit = 300 # seconds
+    start_time = time.time()
     while len(node_list) > 0:
-        n = node_list.pop()
-        if n.feasible:
-            if not n.is_leaf:
-                if curr_best is None or n.estimate > curr_best.value:
-                    visit(n, node_list, K, items)
+        node = node_list.pop()
+        if node.feasible:
+            if not node.is_leaf:
+                if curr_best is None or node.estimate > curr_best.value:
+                    visit(node, node_list, K, items)
                     visited += 1
             else:
-                if curr_best is None or n.value > curr_best.value:
-                    curr_best = n
+                if curr_best is None or node.value > curr_best.value:
+                    curr_best = node
+        if time.time() - start_time > time_limit:
+            print("Time interruption")
+            break
     return curr_best, visited
 
 
@@ -208,9 +229,9 @@ def visit(node, node_list, K, items):
     sol_r = sol1 + [0]
     left = Node(K, items, sol_l)
     right = Node(K, items, sol_r)
-    #depth_first(node_list, left, right)
+    depth_first(node_list, left, right)
     #best_first(node_list, left, right)
-    rand_first(node_list, left, right)
+    #rand_first(node_list, left, right)
 
 
 def depth_first(node_list, left, right):
@@ -263,16 +284,22 @@ class Node():
 
 
 def relax(K, items, curr_sol, curr_value):
-    ratio = [(0, 0)] * (len(items) - len(curr_sol))
-    for idx in range(len(curr_sol), len(items)):
-        ratio[len(curr_sol) - idx] = (items[idx].value /
-                                      items[idx].weight, idx)
-    ratio.sort(key=lambda x: x[0])
+    global SORTED_RATIO
+    ratio = SORTED_RATIO[len(curr_sol):len(items)]
     v = curr_value
+    w = 0
+    for i in range(len(curr_sol)):
+        if curr_sol[i] == 1:
+            w += items[i].weight
     for r in ratio:
-        v += items[r[1]].value
-        if v > K:
-            return K
+        w += items[r[1]].weight
+        if w <= K:
+            v += items[r[1]].value
+        else:
+            extra = K -w
+            perc = 1 - extra/items[r[1]].weight
+            v += perc * items[r[1]].value
+            return v
     return v
 
 
