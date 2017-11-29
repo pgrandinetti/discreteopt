@@ -5,6 +5,7 @@ import math
 import time
 import random
 import pdb
+from datetime import datetime
 from collections import namedtuple
 
 Point = namedtuple("Point", ['x', 'y'])
@@ -31,7 +32,8 @@ def solve_it(input_data):
         points.append(Point(float(parts[0]), float(parts[1])))
 
     POINTS = points
-
+    print('Problem instance with N = {}'.format(len(POINTS)))
+    print('Starts at {}'.format(datetime.now().time()))
     # build a trivial solution
     # visit the nodes in the order they appear in the file
     #solution = range(0, nodeCount)
@@ -67,7 +69,7 @@ def _accept(current, novel, temperature):
 
 def local_search(points, guess, guess_val):
     T0 = round(guess_val/2) # initial temperature
-    time_limit = 180 # seconds
+    time_limit = 300 # seconds
     tabu = [] # keep last 1k visited states
     tabu_size = 5000
     start = time.time()
