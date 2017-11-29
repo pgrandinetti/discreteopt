@@ -36,7 +36,8 @@ def solve_it(input_data):
     # visit the nodes in the order they appear in the file
     #solution = range(0, nodeCount)
 
-    guess = range(0, nodeCount)
+    guess = [x for x in range(0, nodeCount)]
+    #random.shuffle(guess)
     solution = local_search(POINTS, guess, state_value(guess))
 
     # calculate the length of the tour
@@ -58,10 +59,10 @@ def state_value(solution):
 def _accept(current, novel, temperature):
     old_val = state_value(current)
     new_val = state_value(novel)
-    if new_val < old_val: return True
-    threshold = 0.5
-    if math.exp((new_val - old_val) / temperature) > threshold:
-        return True
+    if new_val <= old_val: return True
+    #threshold = 0.5
+    #if math.exp((new_val - old_val) / temperature) > threshold:
+    #    return True
     return False
 
 def local_search(points, guess, guess_val):
@@ -86,6 +87,7 @@ def local_search(points, guess, guess_val):
                 if len(tabu) == tabu_size + 1:
                     tabu = tabu[1:]
         diff = time.time() - start
+        #print('Diff is {}'.format(diff))
         if diff > time_limit:
             print("Time interruption")
             break
