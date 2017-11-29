@@ -67,29 +67,32 @@ def _accept(current, novel, temperature):
 
 def local_search(points, guess, guess_val):
     T0 = round(guess_val/2) # initial temperature
-    time_limit = 120 # seconds
+    time_limit = 180 # seconds
     tabu = [] # keep last 1k visited states
-    tabu_size = 1000
+    tabu_size = 5000
     start = time.time()
-    best = guess
+    best = guess.copy()
     current = guess
+    tabu.append(current)
     T = T0
     maxStep = 1e6
     delta = T0 / maxStep
     for i in range(int(maxStep)-1):
         neigh = find_neigh(current, tabu)
         if neigh is not None:
+            tabu.append(neigh)
+            if len(tabu) == tabu_size + 1:
+                tabu = tabu[1:]
             if _accept(current, neigh, T):
                 current = neigh
-                tabu.append(neigh)
                 if state_value(current) < state_value(best):
-                    best = current
-                if len(tabu) == tabu_size + 1:
-                    tabu = tabu[1:]
+                    best = current.copy()
+        else:
+            current = best
         diff = time.time() - start
         #print('Diff is {}'.format(diff))
         if diff > time_limit:
-            print("Time interruption")
+            print("Time interruption at step {}".format(i))
             break
         T -= delta
     assert(assert_sol(best, len(points)))
