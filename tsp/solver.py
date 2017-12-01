@@ -38,8 +38,10 @@ def solve_it(input_data):
     # visit the nodes in the order they appear in the file
     #solution = range(0, nodeCount)
 
-    guess = [x for x in range(0, nodeCount)]
+    #guess = [x for x in range(0, nodeCount)]
     #random.shuffle(guess)
+    guess = make_initial_guess(nodeCount)
+    print(guess)
     solution = local_search(POINTS, guess, state_value(guess))
 
     # calculate the length of the tour
@@ -50,6 +52,23 @@ def solve_it(input_data):
     output_data += ' '.join(map(str, solution))
 
     return output_data
+
+def make_initial_guess(node_count):
+    global POINTS
+    s = set(range(node_count))
+    guess = [s.pop()]
+    while len(s) > 1:
+        min_dist = -1
+        best = None
+        for elem in s:
+            if min_dist == -1 or\
+               length(POINTS[guess[-1]], POINTS[elem]) < min_dist:
+                min_dist = length(POINTS[guess[-1]], POINTS[elem])
+                best = elem
+        guess.append(best)
+        s.remove(best)
+    guess.append(s.pop())
+    return guess
 
 def state_value(solution):
     global POINTS
@@ -62,8 +81,9 @@ def _accept(current, novel, temperature):
     old_val = state_value(current)
     new_val = state_value(novel)
     if new_val <= old_val: return True
+    #if random.random() > 0.5: return True
     #threshold = 0.5
-    #if math.exp((new_val - old_val) / temperature) > threshold:
+    #if math.exp((new_val - old_val) / temperature) > random.random():
     #    return True
     return False
 
@@ -78,19 +98,29 @@ def local_search(points, guess, guess_val):
     tabu.append(current)
     T = T0
     maxStep = 1e6
+    max_tries = 0
+    empty_neigh = 0
     delta = T0 / maxStep
     for i in range(int(maxStep)-1):
         neigh = find_neigh(current, tabu)
         if neigh is not None:
+            empty_neigh = 0
             tabu.append(neigh)
             if len(tabu) == tabu_size + 1:
                 tabu = tabu[1:]
-            if _accept(current, neigh, T):
+            if _accept(current, neigh, T) or\
+                max_tries == 200:
+                max_tries = 0
                 current = neigh
                 if state_value(current) < state_value(best):
                     best = current.copy()
+            else:
+                max_tries += 1
         else:
-            current = best
+            empty_neigh += 1
+        if empty_neigh == 500:
+            empty_neigh = 0
+            random.shuffle(current)
         diff = time.time() - start
         #print('Diff is {}'.format(diff))
         if diff > time_limit:
@@ -105,9 +135,20 @@ def find_neigh(current, tabu):
     all_sol = k_opt(current)
     all_sol.sort(key=lambda x: state_value(x))
     for s in all_sol:
-        if not s in tabu:
-            return s
+        if not is_permutation(current, s):
+            if not s in tabu:
+                return s
     return None
+
+def is_permutation(sol1, sol2):
+    j1 = 0
+    j2 = sol2.index(sol1[j1])
+    while j1 < len(sol1):
+        if sol1[j1] != sol2[j2 % len(sol2)]:
+            return False
+        j1 += 1
+        j2 += 1
+    return True
 
 def k_opt(curr_sol):
     global POINTS
