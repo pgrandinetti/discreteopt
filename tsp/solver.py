@@ -33,7 +33,6 @@ def solve_it(input_data):
 
     POINTS = points
     print('Problem instance with N = {}'.format(len(POINTS)))
-    print('Starts at {}'.format(datetime.now().time()))
     # build a trivial solution
     # visit the nodes in the order they appear in the file
     #solution = range(0, nodeCount)
@@ -41,8 +40,11 @@ def solve_it(input_data):
     #guess = [x for x in range(0, nodeCount)]
     #random.shuffle(guess)
     guess = make_initial_guess(nodeCount)
-    print(guess)
-    solution = local_search(POINTS, guess, state_value(guess))
+    init_value = state_value(guess)
+    print('Initial guess computed with value {}'.format(init_value))
+    #print(guess)
+    print('Starts at {}'.format(datetime.now().time()))
+    solution = local_search(POINTS, guess, init_value)
 
     # calculate the length of the tour
     obj = state_value(solution)
@@ -80,53 +82,40 @@ def state_value(solution):
 def _accept(current, novel, temperature):
     old_val = state_value(current)
     new_val = state_value(novel)
-    if new_val <= old_val: return True
-    #if random.random() > 0.5: return True
-    #threshold = 0.5
-    #if math.exp((new_val - old_val) / temperature) > random.random():
+    if new_val <= old_val:
+        return True
+    #if random.uniform(temperature, 1) < random.random():
     #    return True
     return False
 
 def local_search(points, guess, guess_val):
-    T0 = round(guess_val/2) # initial temperature
-    time_limit = 300 # seconds
-    tabu = [] # keep last 1k visited states
+    time_limit = 360 # seconds
+    tabu = [] # keep last visited states
     tabu_size = 5000
-    start = time.time()
     best = guess.copy()
     current = guess
-    tabu.append(current)
-    T = T0
-    maxStep = 1e6
+    maxStep = 1e5
     max_tries = 0
     empty_neigh = 0
-    delta = T0 / maxStep
-    for i in range(int(maxStep)-1):
+    start = time.time()
+    diff = time.time() - start
+    while diff < time_limit:
+        tabu.append(current)
         neigh = find_neigh(current, tabu)
         if neigh is not None:
             empty_neigh = 0
             tabu.append(neigh)
             if len(tabu) == tabu_size + 1:
                 tabu = tabu[1:]
-            if _accept(current, neigh, T) or\
-                max_tries == 200:
+            if _accept(current, neigh, diff/time_limit) or\
+                max_tries == len(current):
                 max_tries = 0
                 current = neigh
                 if state_value(current) < state_value(best):
-                    best = current.copy()
+                    best = current
             else:
                 max_tries += 1
-        else:
-            empty_neigh += 1
-        if empty_neigh == 500:
-            empty_neigh = 0
-            random.shuffle(current)
         diff = time.time() - start
-        #print('Diff is {}'.format(diff))
-        if diff > time_limit:
-            print("Time interruption at step {}".format(i))
-            break
-        T -= delta
     assert(assert_sol(best, len(points)))
     return best
 
@@ -150,10 +139,11 @@ def is_permutation(sol1, sol2):
         j2 += 1
     return True
 
-def k_opt(curr_sol):
+def k_opt(curr_sol, rand=None):
     global POINTS
     all_sol = []
-    rand = random.randint(0, len(curr_sol)-1)
+    if rand is None:
+        rand = random.randint(0, len(curr_sol)-1)
     x1 = (curr_sol[rand-1], rand-1)
     x2 = (curr_sol[rand], rand)
     opt = 5
