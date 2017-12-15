@@ -34,17 +34,17 @@ def solve_it(input_data):
     POINTS = points
     print('Problem instance with N = {}'.format(len(POINTS)))
     # build a trivial solution
-    # visit the nodes in the order they appear in the file
-    #solution = range(0, nodeCount)
-
     #guess = [x for x in range(0, nodeCount)]
     #random.shuffle(guess)
-    guess = make_initial_guess(nodeCount)
+    guess = make_initial_guess(nodeCount) # nearest neigh
     init_value = state_value(guess)
     print('Initial guess computed with value {}'.format(init_value))
     #print(guess)
-    print('Starts at {}'.format(datetime.now().time()))
-    solution = local_search(POINTS, guess, init_value)
+    if len(guess) < 30000:
+        print('Starts at {}'.format(datetime.now().time()))
+        solution = local_search(POINTS, guess, init_value)
+    else:
+        solution = guess
 
     # calculate the length of the tour
     obj = state_value(solution)
@@ -79,44 +79,44 @@ def state_value(solution):
         obj += length(POINTS[solution[index]], POINTS[solution[index+1]])
     return obj
 
-def _accept(current, novel, temperature):
+def accept(current, novel, temperature):
     old_val = state_value(current)
     new_val = state_value(novel)
     if new_val <= old_val:
         return True
-    #if random.uniform(temperature, 1) < random.random():
-    #    return True
+    if random.uniform(temperature, 1) < random.uniform(0, 1):
+        return True
     return False
 
 def local_search(points, guess, guess_val):
-    time_limit = 360 # seconds
+    time_limit = 240 # seconds
     tabu = [] # keep last visited states
     tabu_size = 5000
     best = guess.copy()
     current = guess
-    maxStep = 1e5
     max_tries = 0
     empty_neigh = 0
     start = time.time()
     diff = time.time() - start
+    visited = 0
+    lost = 0
     while diff < time_limit:
         tabu.append(current)
         neigh = find_neigh(current, tabu)
         if neigh is not None:
-            empty_neigh = 0
+            visited += 1
             tabu.append(neigh)
             if len(tabu) == tabu_size + 1:
                 tabu = tabu[1:]
-            if _accept(current, neigh, diff/time_limit) or\
-                max_tries == len(current):
-                max_tries = 0
+            if accept(current, neigh, diff/time_limit):
                 current = neigh
                 if state_value(current) < state_value(best):
                     best = current
-            else:
-                max_tries += 1
+        else:
+            lost += 1
         diff = time.time() - start
     assert(assert_sol(best, len(points)))
+    print('Returning solution with {} visited permutations and lost iterations {}'.format(visited, lost))
     return best
 
 def find_neigh(current, tabu):
