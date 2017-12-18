@@ -35,7 +35,6 @@ def solve_it(input_data):
     print('Problem instance with N = {}'.format(len(POINTS)))
     # build a trivial solution
     #guess = [x for x in range(0, nodeCount)]
-    #random.shuffle(guess)
     guess = make_initial_guess(nodeCount) # nearest neigh
     init_value = state_value(guess)
     print('Initial guess computed with value {}'.format(init_value))
@@ -43,6 +42,7 @@ def solve_it(input_data):
     if len(guess) < 30000:
         print('Starts at {}'.format(datetime.now().time()))
         solution = local_search(POINTS, guess, init_value)
+        #solution = random_search(guess)
     else:
         solution = guess
 
@@ -79,17 +79,33 @@ def state_value(solution):
         obj += length(POINTS[solution[index]], POINTS[solution[index+1]])
     return obj
 
+def random_search(guess):
+    time_limit = 300
+    start = time.time()
+    diff = time.time() - start
+    i = 0
+    best = guess.copy()
+    while diff < time_limit:
+        novel = best.copy()
+        random.shuffle(novel)
+        if state_value(novel) < state_value(best):
+            best = novel
+        i += 1
+        diff = time.time() - start
+    print('Returning solution with {} visited permutations'.format(i))
+    return best
+
 def accept(current, novel, temperature):
     old_val = state_value(current)
     new_val = state_value(novel)
     if new_val <= old_val:
         return True
-    if random.uniform(temperature, 1) < random.uniform(0, 1):
+    if random.uniform(temperature, 1) < random.random():
         return True
     return False
 
 def local_search(points, guess, guess_val):
-    time_limit = 240 # seconds
+    time_limit = 300 # seconds
     tabu = [] # keep last visited states
     tabu_size = 5000
     best = guess.copy()
@@ -100,9 +116,10 @@ def local_search(points, guess, guess_val):
     diff = time.time() - start
     visited = 0
     lost = 0
+    counter = 0
     while diff < time_limit:
         tabu.append(current)
-        neigh = find_neigh(current, tabu)
+        neigh = find_neigh(current, tabu, counter)
         if neigh is not None:
             visited += 1
             tabu.append(neigh)
@@ -114,20 +131,39 @@ def local_search(points, guess, guess_val):
                     best = current
         else:
             lost += 1
+        counter += 1
         diff = time.time() - start
     assert(assert_sol(best, len(points)))
     print('Returning solution with {} visited permutations and lost iterations {}'.format(visited, lost))
     return best
 
-def find_neigh(current, tabu):
+def find_neigh(current, tabu, counter):
     global POINTS
-    all_sol = k_opt(current)
+    if counter == 0:
+        rand = len(current) - 1
+    else:
+        rand = None
+    # for k-opt algorithm
+    '''
     all_sol.sort(key=lambda x: state_value(x))
     for s in all_sol:
         if not is_permutation(current, s):
             if not s in tabu:
                 return s
     return None
+    '''
+    # for 2-opt
+    neigh = two_opt(current)
+    if not neigh in tabu:
+        return neigh
+    return None
+
+def two_opt(curr_sol):
+    l = random.randint(2, len(curr_sol) - 1)
+    i = random.randint(0, len(curr_sol) - l)
+    novel = curr_sol.copy()
+    novel[i:(i+l)] = reversed(novel[i:(i+l)])
+    return novel
 
 def is_permutation(sol1, sol2):
     j1 = 0
