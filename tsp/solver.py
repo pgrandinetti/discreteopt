@@ -40,9 +40,13 @@ def solve_it(input_data):
     init_value = state_value(guess)
     print('Initial guess computed with value {}'.format(init_value))
     #print(guess)
+    if len(guess) > 500:
+        time_limit = 600
+    else:
+        time_limit = 180
     if len(guess) < 30000:
         print('Starts at {}'.format(datetime.now().time()))
-        solution = local_search(POINTS, guess, init_value)
+        solution = local_search(POINTS, guess, init_value, time_limit=time_limit)
         #solution = random_search(guess)
     else:
         solution = guess
@@ -50,7 +54,7 @@ def solve_it(input_data):
     # calculate the length of the tour
     obj = state_value(solution)
 
-    plotTSP([solution], points)
+    #plotTSP([solution], points)
 
     # prepare the solution in the specified output format
     output_data = '%.2f' % obj + ' ' + str(0) + '\n'
@@ -109,21 +113,22 @@ def accept(current, novel, temperature):
        #return True
     return False
 
-def local_search(points, guess, guess_val):
+def local_search(points, guess, guess_val, time_limit=120):
     tabu = [] # keep last visited states
     tabu_size = 5000
     best = guess.copy()
     current = guess
-    time_limit = 300 # seconds
-    #start = time.time()
-    #diff = time.time() - start
     lost = 0
     counter = 0
-    max_iter = 100000
+    max_iter = 50000
     T = math.sqrt(len(points))
-    alpha = 0.998
-    min_T = 0.00000001
-    while counter < max_iter and T > min_T:
+    alpha = 0.999
+    min_T = 1e-8
+    start = time.time()
+    diff = time.time() - start
+    while diff < time_limit:
+        if T <= min_T:
+            T = math.sqrt(len(points))
         tabu.append(current)
         neigh = find_neigh(current, tabu, counter)
         if neigh is not None:
@@ -138,9 +143,9 @@ def local_search(points, guess, guess_val):
             lost += 1
         counter += 1
         T *= alpha
-        #diff = time.time() - start
+        diff = time.time() - start
     assert(assert_sol(best, len(points)))
-    print('Returning solution after {} iteration and {} lost iterations'.format(counter, lost))
+    print('Returning solution after {} iteration and {} lost iterations at {}'.format(counter, lost, datetime.now().time()))
     return best
 
 def find_neigh(current, tabu, counter):
