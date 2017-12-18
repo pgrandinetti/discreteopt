@@ -7,6 +7,7 @@ import random
 import pdb
 from datetime import datetime
 from collections import namedtuple
+from plot_tour import plotTSP
 
 Point = namedtuple("Point", ['x', 'y'])
 
@@ -48,6 +49,8 @@ def solve_it(input_data):
 
     # calculate the length of the tour
     obj = state_value(solution)
+
+    plotTSP([solution], points)
 
     # prepare the solution in the specified output format
     output_data = '%.2f' % obj + ' ' + str(0) + '\n'
@@ -100,41 +103,44 @@ def accept(current, novel, temperature):
     new_val = state_value(novel)
     if new_val <= old_val:
         return True
-    if random.uniform(temperature, 1) < random.random():
+    if math.exp(-abs(new_val - old_val) / temperature) > random.random():
         return True
+    #if random.uniform(temperature, 1) < random.random():
+       #return True
     return False
 
 def local_search(points, guess, guess_val):
-    time_limit = 300 # seconds
     tabu = [] # keep last visited states
     tabu_size = 5000
     best = guess.copy()
     current = guess
-    max_tries = 0
-    empty_neigh = 0
-    start = time.time()
-    diff = time.time() - start
-    visited = 0
+    time_limit = 300 # seconds
+    #start = time.time()
+    #diff = time.time() - start
     lost = 0
     counter = 0
-    while diff < time_limit:
+    max_iter = 100000
+    T = math.sqrt(len(points))
+    alpha = 0.998
+    min_T = 0.00000001
+    while counter < max_iter and T > min_T:
         tabu.append(current)
         neigh = find_neigh(current, tabu, counter)
         if neigh is not None:
-            visited += 1
             tabu.append(neigh)
             if len(tabu) == tabu_size + 1:
                 tabu = tabu[1:]
-            if accept(current, neigh, diff/time_limit):
+            if accept(current, neigh, T):
                 current = neigh
                 if state_value(current) < state_value(best):
                     best = current
         else:
             lost += 1
         counter += 1
-        diff = time.time() - start
+        T *= alpha
+        #diff = time.time() - start
     assert(assert_sol(best, len(points)))
-    print('Returning solution with {} visited permutations and lost iterations {}'.format(visited, lost))
+    print('Returning solution after {} iteration and {} lost iterations'.format(counter, lost))
     return best
 
 def find_neigh(current, tabu, counter):
