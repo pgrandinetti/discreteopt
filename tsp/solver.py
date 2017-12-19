@@ -41,9 +41,9 @@ def solve_it(input_data):
     print('Initial guess computed with value {}'.format(init_value))
     #print(guess)
     if len(guess) > 500:
-        time_limit = 600
+        time_limit = 1500
     else:
-        time_limit = 180
+        time_limit = 300
     if len(guess) < 30000:
         print('Starts at {}'.format(datetime.now().time()))
         solution = local_search(POINTS, guess, init_value, time_limit=time_limit)
@@ -86,6 +86,12 @@ def state_value(solution):
         obj += length(POINTS[solution[index]], POINTS[solution[index+1]])
     return obj
 
+def ccw(A,B,C):
+	return (C.y-A.y)*(B.x-A.x) > (B.y-A.y)*(C.x-A.x)
+
+def intersect(A,B,C,D):
+	return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+
 def random_search(guess):
     time_limit = 300
     start = time.time()
@@ -114,8 +120,8 @@ def accept(current, novel, temperature):
     return False
 
 def local_search(points, guess, guess_val, time_limit=120):
-    tabu = [] # keep last visited states
-    tabu_size = 5000
+    #tabu = [] # keep last visited states
+    #tabu_size = 5000
     best = guess.copy()
     current = guess
     lost = 0
@@ -129,12 +135,12 @@ def local_search(points, guess, guess_val, time_limit=120):
     while diff < time_limit:
         if T <= min_T:
             T = math.sqrt(len(points))
-        tabu.append(current)
-        neigh = find_neigh(current, tabu, counter)
+        #tabu.append(current)
+        neigh = find_neigh(current, [], counter)
         if neigh is not None:
-            tabu.append(neigh)
-            if len(tabu) == tabu_size + 1:
-                tabu = tabu[1:]
+            #tabu.append(neigh)
+            #if len(tabu) == tabu_size + 1:
+                #tabu = tabu[1:]
             if accept(current, neigh, T):
                 current = neigh
                 if state_value(current) < state_value(best):
@@ -165,15 +171,41 @@ def find_neigh(current, tabu, counter):
     '''
     # for 2-opt
     neigh = two_opt(current)
-    if not neigh in tabu:
-        return neigh
-    return None
+    #if not neigh in tabu:
+    #    return neigh
+    #return None
+    return neigh
 
 def two_opt(curr_sol):
-    l = random.randint(2, len(curr_sol) - 1)
-    i = random.randint(0, len(curr_sol) - l)
+    global POINTS
     novel = curr_sol.copy()
-    novel[i:(i+l)] = reversed(novel[i:(i+l)])
+    found = False
+    # scan all edges
+    '''
+    for i in range(0, len(curr_sol)-2):
+        for l in range(i+2, len(curr_sol)-1):
+            if intersect(POINTS[curr_sol[i]], POINTS[curr_sol[i+1]],\
+                         POINTS[curr_sol[l]], POINTS[curr_sol[l+1]]):
+                found = True
+                break
+        if found: break
+    '''
+    # or try some random number of them
+    limit = len(curr_sol)
+    while limit > 0:
+        i = random.randint(0, len(curr_sol)-4)
+        l = random.randint(i+2, len(curr_sol)-2)
+        if intersect(POINTS[curr_sol[i]], POINTS[curr_sol[i+1]],\
+                     POINTS[curr_sol[l]], POINTS[curr_sol[l+1]]):
+            found = True
+            break
+        limit -= 1
+    if found:
+        novel[i+1:l+1] = reversed(novel[i+1:l+1])
+    else:
+        l = random.randint(2, len(curr_sol) - 1)
+        i = random.randint(0, len(curr_sol) - l)
+        novel[i:(i+l)] = reversed(novel[i:(i+l)])
     return novel
 
 def is_permutation(sol1, sol2):
