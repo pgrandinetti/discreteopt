@@ -40,11 +40,13 @@ def solve_it(input_data):
     init_value = state_value(guess)
     print('Initial guess computed with value {}'.format(init_value))
     #print(guess)
-    if len(guess) > 500:
-        time_limit = 1500
-    else:
+    if nodeCount < 80:
+        time_limit = 900
+    elif nodeCount < 500:
         time_limit = 300
-    if len(guess) < 30000:
+    else:
+        time_limit = 2400
+    if nodeCount < 30000:
         print('Starts at {}'.format(datetime.now().time()))
         solution = local_search(POINTS, guess, init_value, time_limit=time_limit)
         #solution = random_search(guess)
