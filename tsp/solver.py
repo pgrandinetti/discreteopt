@@ -44,6 +44,8 @@ def solve_it(input_data):
         time_limit = 900
     elif nodeCount < 500:
         time_limit = 300
+    elif nodeCount < 1000:
+        time_limit = 5400
     else:
         time_limit = 2400
     if nodeCount < 30000:
