@@ -43,6 +43,7 @@ def solve_it(input_data):
             weight += item.weight
     """
     SORTED_RATIO = make_sorted_ratio(items)
+    opt = 1 # is the solution provably optimal?
     if len(items) <= 200:
         # dynamic progr
         value, taken, tab = dynamic_prog(capacity, items)
@@ -53,10 +54,11 @@ def solve_it(input_data):
     elif len(items) <= 1000:
         value, taken, tab = dynamic_prog(capacity, items)
     else:
+        opt = 0
         value, taken, visited = DFSearch(capacity, items)
 
     # prepare the solution in the specified output format
-    output_data = str(value) + ' ' + str(0) + '\n'
+    output_data = str(value) + ' ' + str(opt) + '\n'
     output_data += ' '.join(map(str, taken))
     return output_data
 
