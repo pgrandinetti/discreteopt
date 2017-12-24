@@ -7,6 +7,7 @@ from datetime import datetime
 import pdb
 import numpy
 from ortools.linear_solver import pywraplp
+import pyscipopt
 
 Point = namedtuple("Point", ['x', 'y'])
 Facility = namedtuple("Facility", ['index', 'setup_cost', 'capacity', 'location'])
@@ -63,7 +64,10 @@ def solve_it(input_data):
     '''
 
     # test the or-tools from google
-    obj, solution = ortools_solve(facilities, customers)
+    #obj, solution = ortools_solve(facilities, customers)
+
+    # test the scip suite
+    obj, solution = scip_solve(facilities, customers, time_limit=120)
 
     print('Solution got at {}'.format(datetime.now().time()))
     # prepare the solution in the specified output format
@@ -142,6 +146,62 @@ def ortools_solve(facilities, customers, time_limit=None):
     for j in range(len(customers)):
         assignment.append(numpy.where(y_val[:,j]==1)[0][0])
 
+    return val, assignment
+
+def scip_solve(facilities, customers, time_limit=None):
+    fac = len(facilities)
+    cus = len(customers)
+
+    model = pyscipopt.Model('FL')
+    model.setMinimize()
+    # x_i = 1 iff facility i is chosen
+    x = [] # 1xN
+    # y_ij = 1 iff customer j is assigned to facility i
+    y = [[] for x in range(len(facilities))] # NxM
+
+    for i in range(fac):
+        x.append(model.addVar(name='x{}'.format(i), vtype='B'))
+        for j in range(cus):
+            y[i].append(model.addVar(name='y{},{}'.format(i,j), vtype='B'))
+
+    # total demand to 1 facility <= its capacity
+    for i in range(fac):
+        model.addCons(
+            pyscipopt.quicksum(customers[j].demand*y[i][j] for j in range(cus)) <= facilities[i].capacity)
+
+    # exactly 1 facility per customer
+    for j in range(cus):
+        model.addCons(
+            pyscipopt.quicksum(y[i][j] for i in range(fac)) == 1)
+
+    # y_ij can be 1 only if x_i is 1
+    for i in range(fac):
+        for j in range(cus):
+            model.addCons(y[i][j] <= x[i])
+
+    # objective
+    model.setObjective(
+        pyscipopt.quicksum(
+        # distance facility -> customer
+        length(customers[j].location, facilities[i].location) * y[i][j] for i in range(fac) for j in range(cus)
+        ) + 
+        pyscipopt.quicksum(
+        # setup cost
+        facilities[i].setup_cost * x[i] for i in range(fac)
+        ), 'minimize')
+
+    if time_limit is not None:
+        model.setRealParam('limits/time', time_limit)
+    print('SCIP starts at {}'.format(datetime.now().time()))
+    model.optimize()
+    val = model.getObjVal()
+    assignment = []
+    for j in range(cus):
+        for i in range(fac):
+            sol = model.getVal(y[i][j])
+            if sol == 1:
+                assignment.append(i)
+                break
     return val, assignment
         
 
