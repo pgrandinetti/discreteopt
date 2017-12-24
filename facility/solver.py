@@ -67,7 +67,7 @@ def solve_it(input_data):
     #obj, solution = ortools_solve(facilities, customers)
 
     # test the scip suite
-    obj, solution = scip_solve(facilities, customers, time_limit=120)
+    obj, solution = scip_solve(facilities, customers, time_limit=300)
 
     print('Solution got at {}'.format(datetime.now().time()))
     # prepare the solution in the specified output format
@@ -153,6 +153,7 @@ def scip_solve(facilities, customers, time_limit=None):
     cus = len(customers)
 
     model = pyscipopt.Model('FL')
+    model.hideOutput()
     model.setMinimize()
     # x_i = 1 iff facility i is chosen
     x = [] # 1xN
