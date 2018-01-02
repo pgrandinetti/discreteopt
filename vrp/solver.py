@@ -32,6 +32,22 @@ def solve_it(input_data):
 
     # build a trivial solution
     # assign customers to vehicles starting by the largest customer demands
+    vehicle_tours = trivial_sol(customers, depot, vehicle_count, vehicle_capacity)
+
+    # checks that the number of customers served is correct
+    assert sum([len(v) for v in vehicle_tours]) == len(customers) - 1
+
+    # calculate the cost of the solution; for each vehicle the length of the route
+    obj = state_value(vehicle_tours, depot)
+
+    # prepare the solution in the specified output format
+    outputData = '%.2f' % obj + ' ' + str(0) + '\n'
+    for v in range(0, vehicle_count):
+        outputData += str(depot.index) + ' ' + ' '.join([str(customer.index) for customer in vehicle_tours[v]]) + ' ' + str(depot.index) + '\n'
+
+    return outputData
+
+def trivial_sol(customers, depot, vehicle_count, vehicle_capacity):
     vehicle_tours = []
     
     remaining_customers = set(customers)
@@ -51,27 +67,18 @@ def solve_it(input_data):
                     # print '   add', ci, capacity_remaining
                     used.add(customer)
             remaining_customers -= used
+    return vehicle_tours
 
-    # checks that the number of customers served is correct
-    assert sum([len(v) for v in vehicle_tours]) == len(customers) - 1
-
-    # calculate the cost of the solution; for each vehicle the length of the route
+def state_value(veh_tours, depot):
     obj = 0
-    for v in range(0, vehicle_count):
-        vehicle_tour = vehicle_tours[v]
+    for v in range(len(veh_tours)):
+        vehicle_tour = veh_tours[v]
         if len(vehicle_tour) > 0:
-            obj += length(depot,vehicle_tour[0])
+            obj += length(depot, vehicle_tour[0])
             for i in range(0, len(vehicle_tour)-1):
-                obj += length(vehicle_tour[i],vehicle_tour[i+1])
-            obj += length(vehicle_tour[-1],depot)
-
-    # prepare the solution in the specified output format
-    outputData = '%.2f' % obj + ' ' + str(0) + '\n'
-    for v in range(0, vehicle_count):
-        outputData += str(depot.index) + ' ' + ' '.join([str(customer.index) for customer in vehicle_tours[v]]) + ' ' + str(depot.index) + '\n'
-
-    return outputData
-
+                obj += length(vehicle_tour[i], vehicle_tour[i+1])
+            obj += length(vehicle_tour[-1], depot)    
+    return obj
 
 import sys
 
