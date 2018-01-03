@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from copy import deepcopy
 import pdb
+from scip_solve import *
 
 global DEPOT
 
@@ -44,8 +45,14 @@ def solve_it(input_data):
     vehicle_tours = trivial_sol(customers, depot, vehicle_count, vehicle_capacity)
 
     # use local search
-    limit = time_map(customer_count, vehicle_count)
-    vehicle_tours = local_search(customers, vehicle_tours, vehicle_capacity, time_limit=limit)
+    #limit = time_map(customer_count, vehicle_count)
+    #vehicle_tours = local_search(customers, vehicle_tours, vehicle_capacity, time_limit=limit)
+
+    # use MIP
+    obj, vehicle_tours_idx = scip_opt(customer_count, customers, vehicle_count, vehicle_capacity)
+    vehicle_tours = []
+    for tour in vehicle_tours_idx:
+        vehicle_tours.append([customers[x] for x in tour])
 
     # checks that the number of customers served is correct
     assert sum([len(v) for v in vehicle_tours]) == len(customers) - 1
@@ -160,6 +167,37 @@ def local_search(customers, guess, vehicle_capacity, time_limit=120):
     print('Returning solution after {} iteration and {} restarts at {}'.format(counter, restart, datetime.now().time()))
     return best
 
+def scip_opt(customer_count, customers, vehicle_count, vehicle_capacity):
+    V = list(range(customer_count))
+    c = {}
+    for i in V:
+        for j in V:
+            if j > i:
+                c[i,j] = length(customers[i], customers[j])
+    m = vehicle_count
+    q = [customers[i].demand for i in V]
+    Q = vehicle_capacity
+    obj, sol = scip_vrp(V, c, m, q, Q)
+    sol_set = set(sol)
+    vehicle_tours = []
+    node = 0
+    while len(sol_set) > 0:
+        if node == 0:
+            vehicle_tours.append([])
+        for elem in sol_set:
+            next = None
+            if elem[0]==node:
+                next = elem[1]
+            elif elem[1]==node:
+                next = elem[0]
+            if next is not None:
+                found = elem
+                if next != 0:
+                    vehicle_tours[-1].append(next)
+                break
+        node = next
+        sol_set.remove(found)
+    return obj, vehicle_tours
 
 import sys
 
