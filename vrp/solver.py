@@ -64,7 +64,7 @@ def param_map(customer_count, vehicle_count):
     # give different time limits to problem instances
     # times are in seconds
     if customer_count < 50:
-        return 300, find_neigh_2
+        return 600, find_neigh_2
     elif customer_count < 90:
         return 300, find_neigh_2 # instance 3
     elif customer_count < 400:
