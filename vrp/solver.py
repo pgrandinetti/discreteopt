@@ -44,8 +44,8 @@ def solve_it(input_data):
     vehicle_tours = trivial_sol(customers, depot, vehicle_count, vehicle_capacity)
 
     # use local search
-    limit = time_map(customer_count, vehicle_count)
-    vehicle_tours = local_search(customers, vehicle_tours, vehicle_capacity, time_limit=limit)
+    limit, neigh_fnc = param_map(customer_count, vehicle_count)
+    vehicle_tours = local_search(customers, vehicle_tours, vehicle_capacity, time_limit=limit, fnc=neigh_fnc)
 
     # checks that the number of customers served is correct
     assert sum([len(v) for v in vehicle_tours]) == len(customers) - 1
@@ -60,17 +60,17 @@ def solve_it(input_data):
 
     return outputData
 
-def time_map(customer_count, vehicle_count):
+def param_map(customer_count, vehicle_count):
     # give different time limits to problem instances
     # times are in seconds
     if customer_count < 50:
-        return 60
+        return 300, find_neigh_2
     elif customer_count < 90:
-        return 300 # instance 3
+        return 300, find_neigh_2 # instance 3
     elif customer_count < 400:
-        return 300
+        return 300, find_neigh
     else:
-        return 300 # instance 6
+        return 600, find_neigh_2 # instance 6
 
 def trivial_sol(customers, depot, vehicle_count, vehicle_capacity):
     vehicle_tours = []
@@ -133,7 +133,30 @@ def find_neigh(curr_sol, customers, vehicle_capacity):
     neigh[r2].insert(r3, customers[r1])
     return neigh
 
-def local_search(customers, guess, vehicle_capacity, time_limit=120):
+def find_neigh_2(curr_sol, customers, vehicle_capacity):
+    neigh = deepcopy(curr_sol)
+    v1 = random.randint(0, len(curr_sol)-1) # from what vehicle
+    while len(curr_sol[v1]) == 0:
+        v1 = random.randint(0, len(curr_sol)-1)
+    c1 = random.randint(0, len(curr_sol[v1])-1) # what customer
+    tmp = neigh[v1][c1]
+    cap1, cap2 = vehicle_capacity+1, 0
+    while cap1 > vehicle_capacity or cap2 < tmp.demand:
+        v2 = random.randint(0, len(curr_sol)-1) # to what vehicle
+        c2 = random.randint(0, len(curr_sol[v2])) # in what position
+        cap1 = sum(curr_sol[v1][x].demand for x in range(len(curr_sol[v1])) if x!=c1)
+        if c2 < len(curr_sol[v2]):
+             cap1 += curr_sol[v2][c2].demand
+        cap2 = vehicle_capacity - sum(curr_sol[v2][x].demand for x in range(len(curr_sol[v2])) if x!=c2)
+    if c2 < len(curr_sol[v2]):
+        neigh[v1][c1] = neigh[v2][c2]
+        neigh[v2][c2] = tmp
+    else:
+        neigh[v1].remove(tmp)
+        neigh[v2].insert(c2, tmp)
+    return neigh
+
+def local_search(customers, guess, vehicle_capacity, time_limit=120, fnc=find_neigh):
     best = deepcopy(guess)
     current = guess
     restart = 0
@@ -148,7 +171,7 @@ def local_search(customers, guess, vehicle_capacity, time_limit=120):
         if T <= min_T:
             T = len(customers)
             restart += 1
-        neigh = find_neigh(current, customers, vehicle_capacity)
+        neigh = fnc(current, customers, vehicle_capacity)
         if neigh is not None:
             if accept(current, neigh, T):
                 current = neigh
