@@ -70,7 +70,7 @@ def param_map(customer_count, vehicle_count):
     elif customer_count < 400:
         return 300, find_neigh
     else:
-        return 600, find_neigh_2 # instance 6
+        return 300, find_neigh # instance 6
 
 def trivial_sol(customers, depot, vehicle_count, vehicle_capacity):
     vehicle_tours = []
