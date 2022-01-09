@@ -30,7 +30,7 @@ nbconvert==5.3.1
 nbformat==4.4.0
 networkx==2.0
 notebook==6.4.1
-numpy==1.13.3
+numpy==1.21.0
 ortools==6.6.4656
 pandas==0.21.0
 pandocfilters==1.4.2
