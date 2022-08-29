@@ -26,7 +26,7 @@ MarkupSafe==1.0
 matplotlib==2.1.0
 mistune==2.0.3
 multiprocess==0.70.5
-nbconvert==6.3.0
+nbconvert==6.5.1
 nbformat==4.4.0
 networkx==2.0
 notebook==6.4.12
