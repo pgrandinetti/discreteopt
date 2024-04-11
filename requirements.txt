@@ -9,7 +9,7 @@ dill==0.2.7.1
 ecos==2.0.4
 entrypoints==0.2.3
 fastcache==1.0.2
-idna==2.6
+idna==3.7
 ipykernel==4.6.1
 ipython==8.10.0
 ipython-genutils==0.2.0
