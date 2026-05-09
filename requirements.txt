@@ -24,7 +24,7 @@ jupyter-core==4.11.2
 lxml==6.1.0
 MarkupSafe==1.0
 matplotlib==2.1.0
-mistune==2.0.3
+mistune==3.2.1
 multiprocess==0.70.5
 nbconvert==7.17.1
 nbformat==4.4.0
